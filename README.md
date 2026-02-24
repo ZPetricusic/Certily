@@ -84,7 +84,7 @@ New-CertilyTemplate -TemplateName <string> -ESCType <ESC1|ESC2|ESC3|ESC4|ESC9|ES
 | `-ESCType` | Yes | The ESC vulnerability type to simulate |
 | `-UseCanaryTokens` | No | Set up a WMI event subscription to fire a Canary Token alert on enrollment |
 
-> **Note:** Canary Token alerting is not supported for ESC4 templates, as enrollment-based events are not reliably fired for that attack type. ESC3 honeypots are also supported but are uncommon in real environments - consider ESC1 or ESC2 for more convincing lures.
+> **Note:** Canary Token alerting is not supported for ESC4 templates, as ESC4 relies on AD object (template) modifications, which are monitored using the 4662 event ID after a SACL is set. However, depending on the targeted DC, the event may or may not trigger on a DC configured for the Canary token, hence why it is not supported. ESC3 honeypots are also supported but are uncommon in real environments - consider ESC1 or ESC2 for more convincing lures.
 
 #### Examples
 

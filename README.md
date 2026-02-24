@@ -140,12 +140,12 @@ When `-UseCanaryTokens` is specified, Certily creates a WMI event subscription t
 > WMI-based alerting is best-effort. For production environments, ship event logs to a SIEM for more reliable detection.
 
 ### 2. Windows Event Logs
-Certily configures **local** audit policy for **Certification Services** (success + failure). The following events are relevant for monitoring:
+Certily configures **local** audit policy for **Certification Services** (success + failure) - DS Access is not configured as this should be deployed on the Domain Controllers. The following events are relevant for monitoring:
 
 | Event ID | Source | Meaning |
 |----------|--------|---------|
-| **4886** | Security | A certificate was requested - watch for your template name in the message |
-| **4662** | Security | Directory Services Access - triggered on ESC4 write-failure attempts (requires DS Access auditing for Failure events) |
+| **4886/S** | Security | A certificate was requested - watch for your template name in the message |
+| **4662/F** | Security | Directory Services Access - triggered on ESC4 write-failure attempts (requires DS Access auditing for Failure events) |
 
 > Certily only modifies the **local** audit policy. Ensure no conflicting GPO overrides this setting.
 

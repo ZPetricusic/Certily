@@ -1,7 +1,7 @@
 @{
 	RootModule = 'Certily.psm1'
 	Author = 'Josip Pavicic (Infigo IS) & Zdravko Petricusic (Span)'
-	ModuleVersion = '0.0.1'
+	ModuleVersion = '0.2.0'
 	Description = '
 This module creates honeypot certificate templates in Active Directory that appear
 vulnerable to various ADCS exploitation techniques (ESC1, ESC2, ESC3, ESC4, ESC9, ESC15),
@@ -35,12 +35,12 @@ Requirements:
     PrivateData = @{
 		PSData = @{
 			Tags = @('ActiveDirectory', 'AD', 'ActiveDirectoryCertificateServices', 'ADCS', 'Honeypot', 'ESC1')
-			LicenseUri = 'TBD'
-			ProjectURI = 'TBD'
+			LicenseUri = 'https://github.com/ZPetricusic/Certily/blob/main/LICENSE'
+			ProjectURI = 'https://github.com/ZPetricusic/Certily'
 			IconUri = 'TBD'
 		}
 	}
 
-	HelpInfoURI = 'TBD'
+	HelpInfoURI = 'https://github.com/ZPetricusic/Certily/blob/main/README.md'
 	DefaultCommandPrefix = ''
 }

@@ -26,12 +26,11 @@ The module can also be configured to optionally trigger a [Canary Token](https:/
 ### How It Works
 
 1. First, a certificate template is created in AD with a **genuinely vulnerable configuration**
-2. The template is published to the CA, which **caches the vulnerable version**
-3. Protective properties are then modified in AD - e.g. requiring manager approval (`msPKI-Enrollment-Flag`) or a recovery agent signature (`msPKI-RA-Signature`)
-4. Those protective properties are hidden from `Domain Users` via deny-read ACLs, so enumeration tools see only the vulnerable-looking cached configuration
-5. Exploitation attempts fail with the appropriate error message (e.g., that a certificate requires a RA signature or that it is pending)
-6. An appropriate security event will be generated (4662/F for ESC4 and 4886/S for the others)
-7. Uhh, profit?
+2. Protective properties are then modified in AD - e.g. requiring manager approval (`msPKI-Enrollment-Flag`) or a recovery agent signature (`msPKI-RA-Signature`)
+3. Those protective properties are hidden from `Domain Users` via deny-read ACLs, so enumeration tools see only the "vulnerable" configuration
+4. Exploitation attempts fail with the appropriate error message (e.g., that a certificate requires a RA signature or that it is pending)
+5. An appropriate security event will be generated (4662/F for ESC4 and 4886/S for the others)
+6. Uhh, profit?
 
 ---
 

@@ -6,14 +6,14 @@ function New-CertilyTemplate {
     .DESCRIPTION
         This function creates a certificate template that appears vulnerable to various
         ADCS exploitation techniques (ESC1, ESC2, ESC4, ESC9, ESC15) but has hidden
-        protections that prevent actual exploitation. The CA caches the vulnerable
+        protections that prevent actual exploitation. The CA appears to be serving the vulnerable
         configuration, but Active Directory contains protective settings that are
         hidden from attackers via Deny Read ACLs.
     
         The function performs the following steps:
         1. Creates the template with vulnerable configuration in AD
         2. Sets initial ACLs (Read + Enroll or Read + GenericWrite)
-        3. Publishes the template to the CA (CA caches vulnerable version)
+        3. Publishes the template to the CA
         4. Applies protection mechanisms (property changes or Deny Write ACLs)
         5. Hides protection properties using Deny Read ACLs
     
@@ -136,7 +136,6 @@ function New-CertilyTemplate {
         # Verify template was published
         if (Get-CATemplate | Where-Object {$_.Name -eq "$TemplateName"}) {
             Write-Host "[+] Template published to CA successfully" -ForegroundColor Green
-            Write-Host "[+] CA has cached the VULNERABLE version" -ForegroundColor Green
         }
         else {
             Write-Host "[!] Template was not be published correctly! List of published templates is below:" -ForegroundColor Red

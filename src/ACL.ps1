@@ -74,9 +74,9 @@ function Set-PropertyProtection {
         Modifies template properties to add protection mechanisms.
     
     .DESCRIPTION
-        Changes specific template properties to secure values after the CA has cached
-        the vulnerable version. This creates a deceptive layer where the CA serves
-        vulnerable certificates while AD shows protected settings.
+        Changes specific template properties to secure values to mimic
+        the vulnerable version. This creates a deceptive layer where the CA appears
+        to be serving vulnerable certificates which cannot be exploited.
     
     .PARAMETER TemplateDN
         The Distinguished Name of the certificate template
@@ -121,7 +121,7 @@ function Set-PropertyProtection {
         }
 
         Write-Host "[+] Property '$HidePropertyName' modified to safe value" -ForegroundColor Green
-        Write-Host "[*] CA has cached the vulnerable version and will continue serving it" -ForegroundColor Cyan
+        Write-Host "[*] CA is now serving a secure, but vulnerable-looking template" -ForegroundColor Cyan
 
     }
     catch {
@@ -138,7 +138,7 @@ function Set-ESC4Protection {
     .DESCRIPTION
         Protects ESC4 templates by applying Deny Write permissions on critical properties
         (Certificate-Name-Flag, Enrollment-Flag, ExtendedKeyUsage) to prevent tampering
-        after the CA has cached the vulnerable configuration.
+        with the template configuration.
     
     .PARAMETER TemplateDN
         The Distinguished Name of the certificate template
@@ -173,8 +173,7 @@ function Set-ESC4Protection {
         Set-Acl -Path "AD:$TemplateDN" -AclObject $ACL -ErrorAction Stop
 
         Write-Host "[+] Deny Write ACLs applied - properties protected from modification" -ForegroundColor Green
-        Write-Host "[*] CA has cached the vulnerable version and will continue serving it" -ForegroundColor Cyan
-
+        Write-Host "[*] CA is now serving a secure, but vulnerable-looking template" -ForegroundColor Cyan
     }
     catch {
         Write-Host "[!] ERROR: Failed to apply Deny Write ACLs: $($_.Exception.Message)" -ForegroundColor Red

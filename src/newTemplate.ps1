@@ -50,6 +50,7 @@ function New-CertilyTemplate {
         [switch]$UseCanaryTokens = $false
     )
 
+    $SleepTime = 15;
     # Get template path and construct DN
     $TemplatePath = Get-TemplatePath
     $TemplateDN = "CN=$TemplateName,$TemplatePath"
@@ -132,7 +133,10 @@ function New-CertilyTemplate {
         else {
             Set-ADObject -Identity $CAServer -Add @{ certificateTemplates = $TemplateName } -ErrorAction Stop
         }
-        
+
+        Write-Host "[*] Template should be published, sleeping for $SleepTime seconds to ensure the CA was updated..." -ForegroundColor Yellow
+        Start-Sleep $SleepTime
+
         # Verify template was published
         if (Get-CATemplate | Where-Object {$_.Name -eq "$TemplateName"}) {
             Write-Host "[+] Template published to CA successfully" -ForegroundColor Green

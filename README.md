@@ -15,7 +15,7 @@ _________                __  .__.__
 
 ## Before We Begin
 
-This module has been explained in further detail on our blogpost (TBD) if you'd like to understand the reasoning further. Also, the related talk at [BSides Zagreb 2026](https://bsideszagreb.com/) has been recorded if you prefer to ingest your content that way. Anyway, thanks for checking out Certily, hope you find it useful! :)
+This module has been explained in further detail on our blogposts ([Lying to your fACE | Easy way to setup ADCS Honeypot](https://adhdmurky.github.io/posts/post2/) and [Lying to your fACE | Easy way to setup ADCS Honeypot | Part #2](https://kerberpoasting.medium.com/lying-to-your-face-easy-way-to-setup-adcs-honeypot-part-2-b59042058919)) if you'd like to understand the reasoning further. Also, the related talk at [BSides Zagreb 2026](https://bsideszagreb.com/) has been recorded if you prefer to ingest your content that way. Anyway, thanks for checking out Certily, hope you find it useful! :)
 
 ## Overview
 

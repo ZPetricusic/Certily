@@ -22,7 +22,7 @@ function Set-TemplateACL {
         [string]$TemplateDN,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15")]
+        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15", "ESC17")]
         [string]$ESCType
     )
 
@@ -268,7 +268,7 @@ function Hide-Properties {
         [string]$HideProperty,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15")]
+        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15", "ESC17")]
         [string]$ESCType
     )
 

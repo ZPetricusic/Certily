@@ -5,7 +5,7 @@ function New-CertilyTemplate {
     
     .DESCRIPTION
         This function creates a certificate template that appears vulnerable to various
-        ADCS exploitation techniques (ESC1, ESC2, ESC4, ESC9, ESC15) but has hidden
+        ADCS exploitation techniques (ESC1, ESC2, ESC3, ESC4, ESC9, ESC15, ESC17) but has hidden
         protections that prevent actual exploitation. The CA appears to be serving the vulnerable
         configuration, but Active Directory contains protective settings that are
         hidden from attackers via Deny Read ACLs.
@@ -21,7 +21,7 @@ function New-CertilyTemplate {
         The name for the new certificate template
     
     .PARAMETER ESCType
-        The type of ESC vulnerability to simulate (ESC1, ESC2, ESC3, ESC4, ESC9, or ESC15)
+        The type of ESC vulnerability to simulate (ESC1, ESC2, ESC3, ESC4, ESC9, ESC15, or ESC17)
     
     .PARAMETER UseCanaryTokens
         Whether or not to configure a WMI event subscription, 
@@ -43,7 +43,7 @@ function New-CertilyTemplate {
         [string]$TemplateName,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15")]
+        [ValidateSet("ESC1", "ESC2", "ESC3", "ESC4", "ESC9", "ESC15", "ESC17")]
         [string]$ESCType,
 
         [Parameter(Mandatory = $false)]

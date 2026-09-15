@@ -154,6 +154,22 @@ $TemplateAttributesAdditional = @{
         'pKIExtendedKeyUsage'                   = @('1.3.6.1.5.5.7.3.3', '1.3.6.1.5.5.7.3.1')
         'msPKI-Certificate-Application-Policy'  = @('1.3.6.1.5.5.7.3.1', '1.3.6.1.5.5.7.3.3')
     }
+    "ESC17" = @{
+        'flags'                                 = [GeneralFlags]::CT_FLAG_ADD_EMAIL -bor
+                                                  [GeneralFlags]::CT_FLAG_PUBLISH_TO_DS -bor
+                                                  [GeneralFlags]::CT_FLAG_EXPORTABLE_KEY -bor
+                                                  [GeneralFlags]::CT_FLAG_AUTO_ENROLLMENT -bor
+                                                  [GeneralFlags]::CT_FLAG_ADD_TEMPLATE_NAME -bor
+                                                  [GeneralFlags]::CT_FLAG_IS_MODIFIED
+        'revision'                              = 100
+        'pKICriticalExtensions'                 = '2.5.29.15'
+        'msPKI-Template-Schema-Version'         = 4
+        'msPKI-Certificate-Name-Flag'           = [CertificateNameFlags]::CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT.value__ # force int value
+        'msPKI-Enrollment-Flag'                 = [EnrollmentFlags]::CT_FLAG_PUBLISH_TO_DS.value__
+        'pKIExtendedKeyUsage'                   = @('1.3.6.1.5.5.7.3.1')
+        'msPKI-Certificate-Application-Policy'  = @('1.3.6.1.5.5.7.3.1')
+        'msPKI-RA-Application-Policies'         = @('msPKI-Asymmetric-Algorithm`PZPWSTR`RSA`msPKI-Hash-Algorithm`PZPWSTR`SHA1`msPKI-Key-Usage`DWORD`16777215`msPKI-Symmetric-Algorithm`PZPWSTR`3DES`msPKI-Symmetric-Key-Length`DWORD`168`')
+    }
 }
 
 $HidePropertyOptions = @{
@@ -183,5 +199,9 @@ $HidePropertyOptions = @{
     )
     "ESC15" = @(
             @{ Key = 1; Property = "CAManagerApproval"; Description = "Require CA manager approval (CT_FLAG_PEND_ALL_REQUESTS)" }
+    )
+    "ESC17"  = @(
+            @{ Key = 1; Property = "RASignature"; Description = "Require authorized signatures (msPKI-RA-Signature)" }
+            @{ Key = 2; Property = "CAManagerApproval"; Description = "Require CA manager approval (CT_FLAG_PEND_ALL_REQUESTS)" }
     )
 }

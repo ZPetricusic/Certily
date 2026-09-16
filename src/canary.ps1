@@ -38,7 +38,8 @@ function New-CanaryScript {
         Populates the template fields based on the provided template name
         and Canary Web Bug URL and returns a base64-encoded Powershell
         script which will send an HTTP request with the necessary event data
-        to the provided Canary URL.
+        to the provided Canary URL. Note that the Canary POST body is limited
+        to 50 characters, so information has to be choosen wisely :(
     
     .PARAMETER TemplateName
         The name of the honeypot template.
@@ -60,15 +61,30 @@ $CanaryTokensWebBugURL = '<CANARY_URL>'
 
 # get the latest request event
 $HoneyEvent = Get-WinEvent -FilterHashtable @{ LogName = 'Security'; ID = 4886 } | `
-			  Where-Object { $_.Message -match ".*$TemplateName\s" } | `
+			  Where-Object { $_.Message -match "Requested Template:\s+($TemplateName)\s" } | `
               Sort-Object -Property TimeCreated -Descending | Select-Object -First 1 | `
               Select-Object -ExpandProperty Message
-			
+
+$HoneyEvent -match 'Request ID:\s+(\d+)'
+$RequestId = $matches[1]
+
+$HoneyEvent -match 'Requester:\s+(.+?)\s'
+$Requester = $matches[1]
+
+$HoneyEvent -match 'SAN:(.+?)\s'
+if ($null -ne $matches[1]) {
+    $SAN = $matches[1]
+} else {
+    $SAN = "n/a"
+}
+
+$PostBody = "ReqId:$RequestId|ReqUsr:$Requester|SAN:$SAN"
+$PostBody = $PostBody.Substring(0, [Math]::Min($PostBody.Length, 50))
+
 Invoke-WebRequest -UseBasicParsing -Uri $CanaryTokensWebBugURL `
 				  -Method Post -Body @{
-                    Message = $HoneyEvent
+                    Message = $PostBody
 				 }
-
 '@
 
     $template = $template.Replace('<TEMPLATE_NAME>', $TemplateName).Replace('<CANARY_URL>', $CanaryUrl)
@@ -106,15 +122,19 @@ function Remove-WMISubscription {
     $FilterConsumerBindingToCleanup = Get-WmiObject -Namespace root/subscription -Query "REFERENCES OF {$($EventConsumerToCleanup.__RELPATH)} WHERE ResultClass = __FilterToConsumerBinding" -ErrorAction SilentlyContinue
     
     if ($CheckOnly -and ($EventConsumerToCleanup -or $EventFilterToCleanup -or $FilterConsumerBindingToCleanup)) {
-        $deleteWmi = Read-Host "A WMI subscription for the specified template was found - would you like to remove that as well? (y/n)"
-        if ($deleteWmi -ieq 'y') {
-            $FilterConsumerBindingToCleanup | Remove-WmiObject -ErrorAction Stop
-            $EventConsumerToCleanup | Remove-WmiObject -ErrorAction Stop
-            $EventFilterToCleanup | Remove-WmiObject -ErrorAction Stop
-            Write-Host "[+] WMI cleanup complete!" -ForegroundColor Green
-        } else {
-            Write-Host "[*] Not removing WMI subscription for template $TemplateName" -ForegroundColor Yellow
-        }
+        do {
+            $deleteWmi = Read-Host "A WMI subscription for the specified template was found - would you like to remove that as well? (y/n)"
+            if ($deleteWmi -ieq 'y') {
+                $FilterConsumerBindingToCleanup | Remove-WmiObject -ErrorAction Stop
+                $EventConsumerToCleanup | Remove-WmiObject -ErrorAction Stop
+                $EventFilterToCleanup | Remove-WmiObject -ErrorAction Stop
+                Write-Host "[+] WMI cleanup complete!" -ForegroundColor Green
+            } elseif ($deleteWmi -ieq 'n') {
+                Write-Host "[!] Not removing WMI subscription for template $TemplateName" -ForegroundColor Yellow
+            } else {
+                Write-Host "[*] Please enter y or n." -ForegroundColor Yellow
+            }
+        } while (-not ($deleteWmi -iin 'y','n'))
     }
 
     if (-NOT $CheckOnly) {
@@ -138,20 +158,65 @@ function Set-CanaryTokenAlert {
     .PARAMETER TemplateName
         The name for the new certificate template for whose issuance
         monitoring should be set up.
+
+    .PARAMETER UsageMode
+        A usage mode enum indicating whether the WebBug URL is provided
+        as an immediate value, or if the API key is provided and should
+        be used to generate the URL.
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [string]$TemplateName
+        [string]$TemplateName,
+
+        [Parameter(Mandatory = $true)]
+        [AllowNull()]
+        [CanaryUsageMode]$UsageMode
     )
 
     $EventFilterName    = "Certily - $TemplateName was requested (Event Filter)"
     $ConsumerFilterName = "Certily - $TemplateName was requested (Canary Token Alert)"
+    
+    $CanaryKind         = "http"
+    $CanaryMemo         = "Certily - Web Bug token for the '$TemplateName' ADCS certificate template"
 
-    $CanaryTokensWebBugURL = Read-Host "Enter your Canary Token Web Bug URL (https://canarytokens.org/nest/ -> create a new Web Bug token)"
-    if (-NOT ([uri]::IsWellFormedUriString($CanaryTokensWebBugURL, 'Absolute') -and ([uri] $CanaryTokensWebBugURL).Scheme -in 'https','http')) {
-        throw "Provided Canary Token URL is not a valid HTTP(S) URL!"
+    $CanaryTokensWebBugURL = ""
+
+    if ($UsageMode -eq [CanaryUsageMode]::WebBugUrl) {
+        $CanaryTokensWebBugURL = Read-Host "Enter your Canary Token Web Bug URL (https://canarytokens.org/nest/ -> create a new Web Bug token)"
+        if (-NOT ([uri]::IsWellFormedUriString($CanaryTokensWebBugURL, 'Absolute') -and ([uri] $CanaryTokensWebBugURL).Scheme -in 'https','http')) {
+            Write-Host -ForegroundColor Red "Provided Canary Token URL is not a valid HTTP(S) URL!"
+            $script:CanarySucceeded = $false
+            return
+        }
+    } else {
+        $CanaryTokensDomainHash = Read-Host "Enter your Canary Tokens Enterprise console domain hash (first part in your console FQDN, i.e., https://<DOMAIN_HASH>.canary.tools)"
+        $CanaryTokensApiKey = Read-Host "Enter your Canary Tokens Enterprise console API key with 'Canarytoken Deploy' permissions over the target flock"
+
+        if (-not ($CanaryTokensApiKey -match '^[0-9a-f]{44,}$')) {
+            Write-Host -ForegroundColor Red "Provided Canary API key does not match the expected format (44 hex characters)!"
+            $script:CanarySucceeded = $false
+            return
+        }
+
+        try {
+            $CanaryToken = Invoke-RestMethod -Uri "https://$CanaryTokensDomainHash.canary.tools/api/v1/canarytoken/create" -Body @{
+                "auth_token" = $CanaryTokensApiKey
+                "memo"       = $CanaryMemo
+                "kind"       = $CanaryKind
+            } -Method Post -EA Stop
+        } catch {
+            Write-Host -ForegroundColor Red "[!] Error while calling Canary API (HTTP error $($_.Exception.Response.StatusCode.value__)): $($_.ErrorDetails.Message.Trim())"
+            $script:CanarySucceeded = $false
+            return
+        }
+
+        Write-Host -ForegroundColor Green "[+] Canary token created!"
+        $CanaryToken.canarytoken | Format-List
+        $CanaryTokensWebBugURL = $CanaryToken.canarytoken.url
     }
 
+    $script:CanarySucceeded = $true
+    
     try{
         $FilterArgs = @{
             Name            = $EventFilterName

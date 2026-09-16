@@ -75,14 +75,14 @@ Usage instructions are displayed automatically when the module is loaded.
 ### Create a Honeypot Template
 
 ```powershell
-New-CertilyTemplate -TemplateName <string> -ESCType <ESC1|ESC2|ESC3|ESC4|ESC9|ESC15|ESC17> [-UseCanaryTokens]
+New-CertilyTemplate -TemplateName <string> -ESCType <ESC1|ESC2|ESC3|ESC4|ESC9|ESC15|ESC17> [-CanaryUsageMode <ApiKey|WebBugUrl>]
 ```
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `-TemplateName` | Yes | The name of the certificate template to create |
 | `-ESCType` | Yes | The ESC vulnerability type to simulate |
-| `-UseCanaryTokens` | No | Set up a WMI event subscription to fire a Canary Token alert on enrollment |
+| `-CanaryUsageMode` | No | Set up a WMI event subscription to fire a Canary Token alert on enrollment. Supports automated web bug creation via API usage for enterprise users, or manual creation for free users. |
 
 > **Note:** Canary Token alerting is not supported for ESC4 templates, as ESC4 relies on AD object (template) modifications, which are monitored using the 4662 event ID after a SACL is set. However, depending on the targeted DC, the event may or may not trigger on a DC configured for the Canary token, hence why it is not supported. ESC3 honeypots are also supported but are uncommon in real environments - consider ESC1 or ESC2 for more convincing lures.
 
@@ -90,19 +90,19 @@ New-CertilyTemplate -TemplateName <string> -ESCType <ESC1|ESC2|ESC3|ESC4|ESC9|ES
 
 ```powershell
 # Deploy an ESC1 honeypot with Canary Token alerting
-New-CertilyTemplate -TemplateName "ESC1-Test" -ESCType "ESC1" -UseCanaryTokens
+New-CertilyTemplate -TemplateName "ESC1-Test" -ESCType "ESC1" -CanaryUsageMode ApiKey
 
 # Deploy a convincingly named ESC2 honeypot
 New-CertilyTemplate -TemplateName "TotallyLegitTemplate" -ESCType "ESC2"
 
 # Deploy an ESC3 honeypot with alerting
-New-CertilyTemplate -TemplateName "CertificateRequestAgent" -ESCType "ESC3" -UseCanaryTokens
+New-CertilyTemplate -TemplateName "CertificateRequestAgent" -ESCType "ESC3" -CanaryUsageMode ApiKey
 
 # Deploy an ESC4 honeypot
 New-CertilyTemplate -TemplateName "ESC4-Test" -ESCType "ESC4"
 
 # Deploy an ESC9 honeypot with alerting
-New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC9" -UseCanaryTokens
+New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC9" -CanaryUsageMode WebBugUrl
 
 # Deploy an ESC15 honeypot
 New-CertilyTemplate -TemplateName "ESC15-Test" -ESCType "ESC15"
@@ -136,6 +136,8 @@ Certily supports two alerting approaches:
 
 ### 1. Canary Token Alerts (via WMI)
 When `-UseCanaryTokens` is specified, Certily creates a WMI event subscription that listens for Security Event **4886** (Certificate Services received a certificate request) matching the honeypot template name. On detection, it fires an HTTP POST to a [canarytokens.org](https://canarytokens.org/nest/) Web Bug URL containing the raw event log message.
+
+It can also be configured to automatically create the web bug URL through an API call for enterprise console users if the API key is provided.
 
 > WMI-based alerting is best-effort. For production environments, ship event logs to a SIEM for more reliable detection.
 

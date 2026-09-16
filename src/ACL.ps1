@@ -82,7 +82,7 @@ function Set-PropertyProtection {
         The Distinguished Name of the certificate template
     
     .PARAMETER HideProperty
-        Which property to modify (TemplateSchema, RASignature, or CAManagerApproval)
+        Which property to modify (RASignature, or CAManagerApproval)
     
     .EXAMPLE
         Set-PropertyProtection -TemplateDN "CN=MyTemplate,..." -HideProperty "RASignature"
@@ -114,10 +114,6 @@ function Set-PropertyProtection {
                 Set-ADObject -Identity $TemplateDN -Replace @{'msPKI-Enrollment-Flag' = $newFlag } -ErrorAction Stop
                 Write-Host "[+] Added: CT_FLAG_PEND_ALL_REQUESTS (0x2) - CA Manager Approval Required" -ForegroundColor Yellow
             }
-            # "TemplateSchema" {
-            #     Set-ADObject -Identity $TemplateDN -Replace @{'msPKI-Template-Schema-Version' = 2 } -ErrorAction Stop
-            #     Write-Host "[+] Changed: msPKI-Template-Schema-Version = 1 -> 2 (Updated to newer schema)" -ForegroundColor Yellow
-            # }
         }
 
         Write-Host "[+] Property '$HidePropertyName' modified to safe value" -ForegroundColor Green
@@ -252,7 +248,7 @@ function Hide-Properties {
             The Distinguished Name of the certificate template
         
         .PARAMETER HideProperty
-            Which property to hide (TemplateSchema, RASignature, or CAManagerApproval)
+            Which property to hide (RASignature, or CAManagerApproval)
         
         .PARAMETER ESCType
             The type of ESC vulnerability being simulated
@@ -264,7 +260,7 @@ function Hide-Properties {
         [string]$TemplateDN,
 
         [Parameter(Mandatory = $false)]
-        [ValidateSet("TemplateSchema", "RASignature", "CAManagerApproval")]
+        [ValidateSet("RASignature", "CAManagerApproval")]
         [string]$HideProperty,
 
         [Parameter(Mandatory = $true)]

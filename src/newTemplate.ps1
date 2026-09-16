@@ -23,15 +23,24 @@ function New-CertilyTemplate {
     .PARAMETER ESCType
         The type of ESC vulnerability to simulate (ESC1, ESC2, ESC3, ESC4, ESC9, ESC15, or ESC17)
     
-    .PARAMETER UseCanaryTokens
+    .PARAMETER CanaryUsageMode
         Whether or not to configure a WMI event subscription, 
         triggering a Canary Token alert when a honeypot template is requested.
+        
+        Possible values are:
+            - ApiKey, when using an enterprise console
+            - WebBugUrl, when using the free version.
+        
+        When the API key mode is used, the enterprise API is used to 
+        programatically create a new Web Bug URL.
     
+        Can be ommited if Canaries are not used.
+
     .EXAMPLE
         New-CertilyTemplate -TemplateName "ESC1-Honeypot" -ESCType "ESC1"
     
     .EXAMPLE
-        New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC2" -UseCanaryTokens
+        New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC2" -CanaryUsageMode ApiKey
     
     .NOTES
         This function requires Domain/Enterprise Admin privileges and a configured
@@ -47,7 +56,8 @@ function New-CertilyTemplate {
         [string]$ESCType,
 
         [Parameter(Mandatory = $false)]
-        [switch]$UseCanaryTokens = $false
+        [AllowNull()]
+        [CanaryUsageMode]$CanaryUsageMode
     )
 
     $SleepTime = 15;
@@ -70,13 +80,17 @@ function New-CertilyTemplate {
         throw "Administrative privileges not found, exiting"
     }
 
-    if ($UseCanaryTokens) {
+    if ($null -ne $CanaryUsageMode) {
         if ($ESCType -eq "ESC4") {
             Write-Warning "Canary events are not available for ESC4, skipping"
         } else {
             Write-Host "[*] Setting up Canary Token alerting via WMI" -ForegroundColor Cyan
             Write-Warning "Please note that WMI alerting is not the most reliable - event logs should instead be collected and ingested into a SIEM for more reliable detections."
-            Set-CanaryTokenAlert -TemplateName $TemplateName
+            Set-CanaryTokenAlert -TemplateName $TemplateName -UsageMode $CanaryUsageMode
+            if (-NOT $script:CanarySucceeded) {
+                Write-Host "[*] Exiting..."
+                return
+            }
         }
     }
 
@@ -117,10 +131,6 @@ function New-CertilyTemplate {
 
         # STEP 3: Publish template to CA
         Write-Host "`n[*] Step 3: Publishing template to Certificate Authority..." -ForegroundColor Yellow
-
-        # $currentTemplates = certutil.exe -CATemplates | Where-Object { $_ -match '^(.+):.+\-\-' } | ForEach-Object {
-        #     if ($_ -match '^(.+):.+\-\-') { $matches[1] }
-        # }
 
         [string[]]$currentTemplates = Get-CATemplate | Select-Object -ExpandProperty Name
 
@@ -169,6 +179,9 @@ function New-CertilyTemplate {
             Set-ESC4FailureSACL -TemplateDN $TemplateDN
         }
         
+        Write-Host "[*] Sleeping for $SleepTime seconds to ensure that the new ACL's are propagated..." -ForegroundColor Yellow
+        Start-Sleep $SleepTime
+
         # Display final summary
         Write-Host "`n|----------------------------------------------------------------------------|" -ForegroundColor Green
         Write-Host "|                    Honeypot Deployment Complete!                           |" -ForegroundColor Green
@@ -210,7 +223,7 @@ function New-CertilyTemplate {
             Remove-ADObject -Identity $TemplateDN -Confirm:$false -ErrorAction Stop
             Write-Host "[+] Template cleanup completed" -ForegroundColor Green
 
-            if ($UseCanaryTokens){ Remove-WMISubscription -TemplateName $TemplateName }
+            if ($CanaryUsageMode){ Remove-WMISubscription -TemplateName $TemplateName }
         }
         catch {
             Write-Host "[!] Cleanup failed: $($_.Exception.Message)" -ForegroundColor Red

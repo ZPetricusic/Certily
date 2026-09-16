@@ -103,3 +103,9 @@ $DomainUsersIdentity = [System.Security.Principal.SecurityIdentifier]::new(
     [System.Security.Principal.WellKnownSidType]::AccountDomainUsersSid,
     (Get-ADDomain).DomainSID.value
 )
+
+# Canary usage modes
+enum CanaryUsageMode {
+    ApiKey
+    WebBugUrl
+}

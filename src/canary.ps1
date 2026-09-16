@@ -1,3 +1,39 @@
+function Get-AuditingPolicy {
+    <#
+    .SYNOPSIS
+        Checks the necessary audit policy settings to ensure that template issuing requests are logged.
+
+    .DESCRIPTION
+        Checks both the local audit policy (requires admin rights) and the CA settings to ensure the
+        'Issue and manage certificate requests' audit flag is enabled.
+    #>
+
+    Write-Host "[*] Checking local auditing policy settings" -ForegroundColor Cyan
+    $auditpolData = auditpol.exe /get /subcategory:"Certification Services" /r | ConvertFrom-Csv
+    if ($($auditpolData | Select-Object -ExpandProperty "Inclusion Setting") -ieq 'Success and Failure') {
+        Write-Host "[+] Auditing policy for 'Certification Services' already enabled, skipping setup"
+        $Script:auditpolSetup = $true
+    } else {
+        Write-Host "[!] Auditing policy for 'Certification Services' not enabled, will be set up"
+        $Script:auditpolSetup = $false
+    }
+
+    Write-Host "[*] Checking CA auditing settings" -ForegroundColor Cyan
+    
+    $ISSUE_AND_MANAGE_CERTS_FLAG = 0x4
+    $currentCA = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration').Active
+    $auditSettingsPath = "HKLM:\System\CurrentControlSet\Services\CertSvc\Configuration\$currentCA"
+    $auditBitmaskValue = Get-ItemPropertyValue -Path $auditSettingsPath -Name "AuditFilter"
+
+    if (($auditBitmaskValue -band $ISSUE_AND_MANAGE_CERTS_FLAG) -ne 0) {
+        Write-Host "[+] CA auditing flag for 'Issue and Manage Certificates' already enabled, skipping setup"
+        $Script:caSetup = $true
+    } else {
+        Write-Host "[!] CA auditing flag for 'Issue and Manage Certificates' not enabled, will be set up"
+        $Script:caSetup = $false
+    }
+}
+
 function Set-AuditingPolicy {
     <#
     .SYNOPSIS
@@ -10,23 +46,26 @@ function Set-AuditingPolicy {
         4886 (Certification Services).
     #>
 
-    Write-Host "[*] Enabling success and failure audit events for 'Certification Services'" -ForegroundColor Cyan
-    Write-Warning "`n`nNote that this script only configures the auditing policy locally! Group policy definitions and similar mechanisms should still take precedence, potentially disabling the audit policy! Ensure that the policy is not being overwritten by an existing GPO, or configure the GPO to enforce auditing of Certification Services!`n`n"
-    
-    auditpol.exe /set /subcategory:"Certification Services" /success:enable /failure:enable
-    auditpol.exe /get /subcategory:"Certification Services"
+    if (-not $Script:auditpolSetup) {
+        Write-Host "[*] Enabling success and failure audit events for 'Certification Services'" -ForegroundColor Cyan
+        Write-Warning "`n`nNote that this script only configures the auditing policy locally! Group policy definitions and similar mechanisms should still take precedence, potentially disabling the audit policy! Ensure that the policy is not being overwritten by an existing GPO, or configure the GPO to enforce auditing of Certification Services!`n`n"
+        
+        auditpol.exe /set /subcategory:"Certification Services" /success:enable /failure:enable
+        auditpol.exe /get /subcategory:"Certification Services"
+    }
 
-    Write-Host "`n[*] Opening the Certification Authority snap-in to enable template issuance auditing" -ForegroundColor Cyan
-    Write-Host @"
+    if (-not $Script:caSetup) {
+        Write-Host "`n[*] Opening the Certification Authority snap-in to enable template issuance auditing" -ForegroundColor Cyan
+        Write-Host @"
 [*] To enable template issuance auditing via the Cert Authority snap-in:
 `t1. Find your CA in the snap-in
 `t2. Right-click -> Properties -> Auditing
 `t3. Ensure that 'Issue and manage certificate requests' is checked
 "@
 
-    Start-Process "$env:windir\System32\certsrv.msc"
-
-    Read-Host "`tOnce auditing has been enabled, press [Return] to continue"
+        Start-Process "$env:windir\System32\certsrv.msc"
+        Read-Host "`tOnce auditing has been enabled, press [Return] to continue"
+    }
 }
 
 function New-CanaryScript {

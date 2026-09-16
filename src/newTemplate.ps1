@@ -74,10 +74,15 @@ function New-CertilyTemplate {
         return
     }
 
-    if (Test-IfAdmin) {
-        Set-AuditingPolicy
-    } else {
-        throw "Administrative privileges not found, exiting"
+    Get-AuditingPolicy
+
+    # if some auditing configuration was not set, do it
+    if (-not ($Script:auditpolSetup -and $Script:caSetup)) {
+        if (Test-IfAdmin) {
+            Set-AuditingPolicy
+        } else {
+            throw "Administrative privileges not found, exiting"
+        }
     }
 
     if ($null -ne $CanaryUsageMode) {

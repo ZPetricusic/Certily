@@ -1,7 +1,7 @@
 @{
 	RootModule = 'Certily.psm1'
 	Author = 'Josip Pavicic (Infigo IS) & Zdravko Petricusic (Span)'
-	ModuleVersion = '0.4.1'
+	ModuleVersion = '0.4.2'
 	Description = '
 This module creates honeypot certificate templates in Active Directory that appear
 vulnerable to various ADCS exploitation techniques (ESC1, ESC2, ESC3, ESC4, ESC9, ESC15),

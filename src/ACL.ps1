@@ -29,34 +29,38 @@ function Set-TemplateACL {
     try {
         $ACL = Get-Acl -Path "AD:$TemplateDN" -ErrorAction Stop
 
-        # Grant Read permissions to Everyone
+        # Grant Read permissions to Authenticated Users
         $ReadRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
-            $DomainUsersIdentity,
+            $AuthenticatedUsersIdentity,
             [System.DirectoryServices.ActiveDirectoryRights]::GenericRead,
             [System.Security.AccessControl.AccessControlType]::Allow
         )
         $ACL.AddAccessRule($ReadRule)
 
         if ($ESCType -eq "ESC4") {
-            # ESC4: Grant GenericWrite to make template modifiable
-            $WriteRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
-                $DomainUsersIdentity,
-                [System.DirectoryServices.ActiveDirectoryRights]::GenericWrite,
-                [System.Security.AccessControl.AccessControlType]::Allow
-            )
-            $ACL.AddAccessRule($WriteRule)
-            Write-Host "[+] Added Read and GenericWrite permissions for 'Domain Users'" -ForegroundColor Green
+            # ESC4: Grant GenericWrite to DU, DA, EA to make template modifiable
+            foreach ($identity in $EnrollmentIdentities) {
+                $WriteRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
+                    $identity,
+                    [System.DirectoryServices.ActiveDirectoryRights]::GenericWrite,
+                    [System.Security.AccessControl.AccessControlType]::Allow
+                )
+                $ACL.AddAccessRule($WriteRule)
+                Write-Host "[+] Added Read and GenericWrite permissions for '$($identity.Value)'" -ForegroundColor Green
+            }
         }
         else {
-            # Other ESC types: Grant Enroll extended right
-            $EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
-                $DomainUsersIdentity,
-                [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight,
-                [System.Security.AccessControl.AccessControlType]::Allow,
-                $EnrollGUID
-            )
-            $ACL.AddAccessRule($EnrollRule)
-            Write-Host "[+] Added Read and Enroll permissions for 'Domain Users'" -ForegroundColor Green
+            # Other ESC types: Grant Enroll extended right to DU, DA, and EA
+            foreach ($identity in $EnrollmentIdentities) {
+                $EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
+                    $identity,
+                    [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight,
+                    [System.Security.AccessControl.AccessControlType]::Allow,
+                    $EnrollGUID
+                )
+                $ACL.AddAccessRule($EnrollRule)
+                Write-Host "[+] Added Read and Enroll permissions for '$($identity.Value)'" -ForegroundColor Green
+            }
         }
 
         Set-Acl -Path "AD:$TemplateDN" -AclObject $ACL -ErrorAction Stop

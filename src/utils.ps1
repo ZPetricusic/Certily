@@ -179,13 +179,14 @@ Available ESC types:
     ESC4   - Vulnerable ACL allowing template modification
     ESC9   - StrongCertificateBindingEnforcement = 0 (NO_SECURITY_EXTENSION)
     ESC15  - Legacy schema version 1 template
+    ESC17  - Server Authentication + SAN enabled, for taking over WSUS or other HTTPS services
 
 Examples:
-    New-CertilyTemplate -TemplateName "ESC1-Test" -ESCType "ESC1" -UseCanaryTokens
+    New-CertilyTemplate -TemplateName "ESC1-Test" -ESCType "ESC1" -CanaryUsageMode ApiKey
     New-CertilyTemplate -TemplateName "TotallyLegitTemplate" -ESCType "ESC2"
-    New-CertilyTemplate -TemplateName "CertificateRequestAgent" -ESCType "ESC3" -UseCanaryTokens
+    New-CertilyTemplate -TemplateName "CertificateRequestAgent" -ESCType "ESC3" -CanaryUsageMode ApiKey
     New-CertilyTemplate -TemplateName "ESC4-Test" -ESCType "ESC4"
-    New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC9" -UseCanaryTokens
+    New-CertilyTemplate -TemplateName "Cert4NDES" -ESCType "ESC9" -CanaryUsageMode WebBugUrl
     New-CertilyTemplate -TemplateName "ESC15-Test" -ESCType "ESC15"
 
     Remove-CertilyTemplate -TemplateName "ESC1-Test" -RemoveCanaryToken

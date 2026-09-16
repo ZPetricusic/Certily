@@ -99,10 +99,27 @@ $PropertyMap = @{
 # https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/443fe66f-c9b7-4c50-8c24-c708692bbf1d
 $EnrollGUID = [GUID]"0e10c968-78fb-11d2-90d4-00c04f79dc55"
 
+$AuthenticatedUsersIdentity = [System.Security.Principal.SecurityIdentifier]::new(
+    [System.Security.Principal.WellKnownSidType]::AuthenticatedUserSid,
+    (Get-ADDomain).DomainSID.value
+)
+
 $DomainUsersIdentity = [System.Security.Principal.SecurityIdentifier]::new(
     [System.Security.Principal.WellKnownSidType]::AccountDomainUsersSid,
     (Get-ADDomain).DomainSID.value
 )
+
+$DomainAdminsIdentity = [System.Security.Principal.SecurityIdentifier]::new(
+    [System.Security.Principal.WellKnownSidType]::AccountDomainAdminsSid,
+    (Get-ADDomain).DomainSID.value
+)
+
+$EnterpriseAdminsIdentity = [System.Security.Principal.SecurityIdentifier]::new(
+    [System.Security.Principal.WellKnownSidType]::AccountEnterpriseAdminsSid,
+    (Get-ADDomain).DomainSID.value
+)
+
+$EnrollmentIdentities = @($DomainUsersIdentity, $DomainAdminsIdentity, $EnterpriseAdminsIdentity)
 
 # Canary usage modes
 enum CanaryUsageMode {

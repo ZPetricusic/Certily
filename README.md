@@ -44,7 +44,7 @@ The module can also be configured to optionally trigger a [Canary Token](https:/
 | **ESC4** | Vulnerable ACE allowing template modification | Explicit deny-write on critical properties + RA Signature or CA Manager Approval |
 | **ESC9** | `NO_SECURITY_EXTENSION` flag set | RA Signature (automatic) |
 | **ESC15** | Legacy schema version 1 template + SAN | CA Manager Approval (automatic) |
-| **ESC17** | Server Authentication + SAN | RA Signature or CA Manager Approval |
+| **ESC17** | Server Authentication + SAN enabled, for taking over WSUS or other HTTPS services | RA Signature or CA Manager Approval |
 
 ---
 

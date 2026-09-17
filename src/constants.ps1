@@ -126,3 +126,9 @@ enum CanaryUsageMode {
     ApiKey
     WebBugUrl
 }
+
+# audit policy check flags
+enum PolicyCheckMode {
+    auditingPolicy
+    caPolicy
+}

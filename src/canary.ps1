@@ -6,31 +6,45 @@ function Get-AuditingPolicy {
     .DESCRIPTION
         Checks both the local audit policy (requires admin rights) and the CA settings to ensure the
         'Issue and manage certificate requests' audit flag is enabled.
+
+    .PARAMETER PolicyToCheck
+        Flag indicating whether the audit policy or CA settings should be checked.
+        If ommited, both checks are performed.
     #>
 
-    Write-Host "[*] Checking local auditing policy settings" -ForegroundColor Cyan
-    $auditpolData = auditpol.exe /get /subcategory:"Certification Services" /r | ConvertFrom-Csv
-    if ($($auditpolData | Select-Object -ExpandProperty "Inclusion Setting") -ieq 'Success and Failure') {
-        Write-Host "[+] Auditing policy for 'Certification Services' already enabled, skipping setup"
-        $Script:auditpolSetup = $true
-    } else {
-        Write-Host "[!] Auditing policy for 'Certification Services' not enabled, will be set up"
-        $Script:auditpolSetup = $false
+    param (
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [PolicyCheckMode]$PolicyToCheck
+    )
+
+    if ($null -eq $PolicyToCheck -or $PolicyToCheck -eq [PolicyCheckMode]::auditingPolicy) {
+        Write-Host "[*] Checking local auditing policy settings" -ForegroundColor Cyan
+        $auditpolData = auditpol.exe /get /subcategory:"Certification Services" /r | ConvertFrom-Csv
+        if ($($auditpolData | Select-Object -ExpandProperty "Inclusion Setting") -ieq 'Success and Failure') {
+            Write-Host "[+] Auditing policy for 'Certification Services' already enabled, skipping setup"
+            $Script:auditpolSetup = $true
+        } else {
+            Write-Host "[!] Auditing policy for 'Certification Services' not enabled, will be set up"
+            $Script:auditpolSetup = $false
+        }
     }
 
-    Write-Host "[*] Checking CA auditing settings" -ForegroundColor Cyan
-    
-    $ISSUE_AND_MANAGE_CERTS_FLAG = 0x4
-    $currentCA = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration').Active
-    $auditSettingsPath = "HKLM:\System\CurrentControlSet\Services\CertSvc\Configuration\$currentCA"
-    $auditBitmaskValue = Get-ItemPropertyValue -Path $auditSettingsPath -Name "AuditFilter"
+    if ($null -eq $PolicyToCheck -or $PolicyToCheck -eq [PolicyCheckMode]::caPolicy) {
+        Write-Host "[*] Checking CA auditing settings" -ForegroundColor Cyan
+        
+        $ISSUE_AND_MANAGE_CERTS_FLAG = 0x4
+        $currentCA = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration').Active
+        $auditSettingsPath = "HKLM:\System\CurrentControlSet\Services\CertSvc\Configuration\$currentCA"
+        $auditBitmaskValue = Get-ItemPropertyValue -Path $auditSettingsPath -Name "AuditFilter"
 
-    if (($auditBitmaskValue -band $ISSUE_AND_MANAGE_CERTS_FLAG) -ne 0) {
-        Write-Host "[+] CA auditing flag for 'Issue and Manage Certificates' already enabled, skipping setup"
-        $Script:caSetup = $true
-    } else {
-        Write-Host "[!] CA auditing flag for 'Issue and Manage Certificates' not enabled, will be set up"
-        $Script:caSetup = $false
+        if (($auditBitmaskValue -band $ISSUE_AND_MANAGE_CERTS_FLAG) -ne 0) {
+            Write-Host "[+] CA auditing flag for 'Issue and Manage Certificates' already enabled, skipping setup"
+            $Script:caSetup = $true
+        } else {
+            Write-Host "[!] CA auditing flag for 'Issue and Manage Certificates' not enabled, will be set up"
+            $Script:caSetup = $false
+        }
     }
 }
 
@@ -53,19 +67,24 @@ function Set-AuditingPolicy {
         auditpol.exe /set /subcategory:"Certification Services" /success:enable /failure:enable
         auditpol.exe /get /subcategory:"Certification Services"
     }
-
-    if (-not $Script:caSetup) {
-        Write-Host "`n[*] Opening the Certification Authority snap-in to enable template issuance auditing" -ForegroundColor Cyan
-        Write-Host @"
+    
+    do {
+        if (-not $Script:caSetup) {
+            Write-Host "`n[*] Template issuance auditing has not been enabled, opening the Certification Authority snap-in" -ForegroundColor Cyan
+            Write-Host @"
 [*] To enable template issuance auditing via the Cert Authority snap-in:
 `t1. Find your CA in the snap-in
 `t2. Right-click -> Properties -> Auditing
 `t3. Ensure that 'Issue and manage certificate requests' is checked
+`t4. Apply the settings and make sure to restart the CA by running 'net stop certsvc && net start certsvc' - the settings will not be applied until the CA service is restarted.
 "@
 
-        Start-Process "$env:windir\System32\certsrv.msc"
-        Read-Host "`tOnce auditing has been enabled, press [Return] to continue"
-    }
+            Start-Process "$env:windir\System32\certsrv.msc"
+            Read-Host "`tOnce auditing has been enabled, press [Return] to continue"
+        }
+
+        Get-AuditingPolicy -PolicyToCheck caPolicy
+    } while (-not $Script:caSetup)
 }
 
 function New-CanaryScript {
